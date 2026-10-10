@@ -1,0 +1,154 @@
+{
+  "version": "10.0.0.0",
+  "scaleUnits": [
+    {
+      "deploymentData": {
+        "securitySettings": {
+          "hvciProtection": true,
+          "drtmProtection": true,
+          "driftControlEnforced": true,
+          "credentialGuardEnforced": true,
+          "smbSigningEnforced": true,
+          "smbClusterEncryption": false,
+          "sideChannelMitigationEnforced": true,
+          "bitlockerBootVolume": true,
+          "bitlockerDataVolumes": true,
+          "wdacEnforced": true
+        },
+        "observability": {
+          "streamingDataClient": true,
+          "euLocation": true,
+          "episodicDataUpload": true
+        },
+        "cluster": {
+          "name": "xeonedgelocal",
+          "witnessType": "",
+          "witnessPath": "",
+          "cloudAccountName": "",
+          "azureServiceEndpoint": "",
+          "hardwareClass": "Medium"
+        },
+        "storage": {
+          "configurationMode": "Express"
+        },
+        "namingPrefix": "HCI01",
+        "domainFqdn": "xeon-edge-ai-az.lab",
+        "infrastructureNetwork": [
+          {
+            "subnetMask": "255.255.255.0",
+            "gateway": "192.168.201.1",
+            "useDhcp": false,
+            "ipPools": [
+              {
+                "startingAddress": "192.168.201.20",
+                "endingAddress": "192.168.201.25"
+              }
+            ],
+            "dnsServers": [
+              "192.168.201.10"
+            ]
+          }
+        ],
+        "physicalNodes": [
+          {
+            "name": "GP82K74",
+            "ipv4Address": "192.168.201.12"
+          }
+        ],
+        "hostNetwork": {
+          "intents": [
+            {
+              "name": "Compute_Management_Storage",
+              "trafficType": [
+                "Compute",
+                "Management",
+                "Storage"
+              ],
+              "adapter": [
+                "Embedded NIC 1"
+              ],
+              "overrideVirtualSwitchConfiguration": false,
+              "virtualSwitchConfigurationOverrides": {
+                "enableIov": "",
+                "loadBalancingAlgorithm": ""
+              },
+              "overrideQosPolicy": false,
+              "qosPolicyOverrides": {
+                "priorityValue8021Action_Cluster": "7",
+                "priorityValue8021Action_SMB": "3",
+                "bandwidthPercentage_SMB": "50"
+              },
+              "overrideAdapterProperty": false,
+              "adapterPropertyOverrides": {
+                "jumboPacket": "1514",
+                "networkDirect": "Enabled",
+                "networkDirectTechnology": "RoCEv2"
+              }
+            }
+          ],
+          "storageNetworks": [
+            {
+              "name": "StorageNetwork1",
+              "networkAdapterName": "Embedded NIC 1",
+              "vlanId": "1"
+            }
+          ],
+          "storageConnectivitySwitchless": true,
+          "enableStorageAutoIp": true
+        },
+        "adouPath": "OU=AzureLocal,DC=xeon-edge-ai-az,DC=lab",
+        "secretsLocation": "https://xeonedgelocal-hcikv.vault.azure.net/",
+        "optionalServices": {
+          "customLocation": "xeonai-arizona"
+        },
+        "secrets": [
+          {
+            "secretName": "xeonedgelocal-LocalAdminCredential-8f9e153a-b5a0-4eea-916e-653d4175f39d",
+            "eceSecretName": "LocalAdminCredential",
+            "secretLocation": "https://xeonedgelocal-hcikv.vault.azure.net/secrets/xeonedgelocal-LocalAdminCredential-8f9e153a-b5a0-4eea-916e-653d4175f39d"
+          },
+          {
+            "secretName": "xeonedgelocal-AzureStackLCMUserCredential-8f9e153a-b5a0-4eea-916e-653d4175f39d",
+            "eceSecretName": "AzureStackLCMUserCredential",
+            "secretLocation": "https://xeonedgelocal-hcikv.vault.azure.net/secrets/xeonedgelocal-AzureStackLCMUserCredential-8f9e153a-b5a0-4eea-916e-653d4175f39d"
+          }
+        ],
+        "assemblyInfo": {
+          "packageVersion": "10.2609.0.6",
+          "payload": [
+            {
+              "identifier": "CloudDeployment_zip",
+              "hash": "07E4927428CFC445ADA1844BEE0565B5B3F1D87B40894126558F6B1218B3F149",
+              "fileName": "CloudDeployment_10.2609.0.6.zip",
+              "url": "https://azurestackreleases.download.prss.microsoft.com/dbazure/AzureLocal/CloudDeployment/10.2609.0.6/CloudDeployment_10.2609.0.6.zip"
+            },
+            {
+              "identifier": "VerifyCloudDeployment_ps1",
+              "hash": "00C965DAA833C887CDCAA3909BA2C90D2755BA633A456D35F01D399B14819F0B",
+              "fileName": "Verify-CloudDeployment_10.2609.0.6.zip_Hash.ps1",
+              "url": "https://azurestackreleases.download.prss.microsoft.com/dbazure/AzureLocal/CloudDeployment/10.2609.0.6/Verify-CloudDeployment_10.2609.0.6.zip_Hash.ps1"
+            },
+            {
+              "identifier": "BootstrapCloudDeploymentTool_ps1",
+              "hash": "087D0D25DF0A8AF9A2F6246BF93F6F3161004DBFBD71D469301B5B74D3128990",
+              "fileName": "BootstrapCloudDeploymentTool.ps1",
+              "url": "https://azurestackreleases.download.prss.microsoft.com/dbazure/AzureLocal/CloudDeployment/10.2609.0.6/BootstrapCloudDeploymentTool.ps1"
+            },
+            {
+              "identifier": "SolutionVersion",
+              "hash": "",
+              "fileName": "12.2609.1003.7",
+              "url": ""
+            },
+            {
+              "identifier": "Services_zip",
+              "hash": "0F98F1314E566682278CCE7D0DF741484A04277E21E65EBECBFC735C9696FA6A",
+              "fileName": "AS_Update_10.2609.0.6.zip",
+              "url": "https://azurestackreleases.download.prss.microsoft.com/dbazure/AzureLocal/CloudDeployment/10.2609.0.6/AS_Update_10.2609.0.6.zip"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
