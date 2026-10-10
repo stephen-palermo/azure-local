@@ -3,6 +3,14 @@
 > Copy-paste ready. Open from Azure Portal → **Help + support → Create a support request**
 > → Issue type **Technical** → Service **Azure Local / Azure Stack HCI**.
 
+## Contact & case details
+- **Name:** Stephen Palermo
+- **Email:** stephen.t.palermo@intel.com
+- **Phone:** 602-300-8393
+- **Date prepared:** 2026-10-10 (time: ______ local — set when submitting)
+- **Subscription ID:** 260f1e88-d954-4946-9d66-876b6722ffc4
+- **Preferred contact method:** email / phone
+
 ## Title
 Azure Local single-node deployment fails at "Validating input parameters" — `Cannot convert "" to System.Xml.XmlDocument` (hex 0x00)
 
@@ -56,8 +64,14 @@ Identify the deployment input parameter being cast to `[xml]` with an empty valu
 Analysis of `C:\CloudDeployment\Logs\Script.*.log` shows all parameters assign successfully, then at `Validating input parameters` the tool casts a value that is a **run of spaces + an embedded `0x00`** to `[xml]`, which throws. The invocation line passes `-SqlActivationKey System.Security.SecureString` — an **empty SecureString** for this deployment. Marshaling an empty SecureString back to text yields the whitespace+null value, so the most likely culprit is `BootstrapCloudDeploymentTool.ps1` (package **CloudDeployment 10.2609.0.6**) parsing an empty `SqlActivationKey` as XML. `SqlActivationKey` is not exposed in the portal wizard, so the customer cannot work around it via configuration. `Unattended.json` is well-formed. Secondary suspects (empty single-node witness fields `WitnessType=`/`WitnessPath=`, empty security toggles `VBSProtection=`/`SEDProtectionEnforced=`) are empty strings rather than whitespace, so less likely.
 
 ## Logs to attach
-- `C:\CloudDeployment\Logs\Script.<latest>.log` — shows the full parameter-assignment block followed by the failing `XmlDocument` line.
-- Portal deployment **Activity Log** JSON entry (`microsoft.azurestackhci/clusters/deploymentSettings/write`, status Failed) — contains the `statusMessage` with the stuck-checker exception.
+Collect these before submitting (checklist):
+- [ ] **`C:\CloudDeployment\Logs\Script.<latest>.log`** — shows the full parameter-assignment block followed by the failing `XmlDocument` line. (Example captured: `Script.2026-10-09.11-33-39.log`.)
+- [ ] **Entire `C:\CloudDeployment\Logs\` folder** (zip it) — full deployment/ECE engine logs for context.
+- [ ] **`C:\Deployment\Unattended.json`** — the generated answer file (confirms the config is well-formed). **Redact any secret/password values before sending.**
+- [ ] **Portal deployment Activity Log JSON** (`microsoft.azurestackhci/clusters/deploymentSettings/write`, status Failed) — contains the `statusMessage` with the `execution stuck at: InvokeEnvironmentChecker` exception.
+- [ ] **`azcmagent show` output** from the node — proves Arc agent Connected + extensions healthy.
+- [ ] **`Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"`** (CurrentBuild/UBR) — proves build 26100.33438, fully patched.
+- [ ] Optional: **Support log package** via the Configurator app (`Upload the Support log package`) — bundles all node logs for Microsoft.
 
 ## Reference
 Full troubleshooting history: `Azure-Local.README.md` in this repo.

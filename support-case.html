@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microsoft Support Case — Azure Local XML Parse Failure</title>
+<style>
+  :root { --ink:#1b1b1b; --muted:#555; --accent:#0b5cad; --rule:#d0d0d0; --codebg:#f4f4f6; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: var(--ink); line-height: 1.5; max-width: 820px;
+    margin: 2rem auto; padding: 0 1.25rem; font-size: 14px;
+  }
+  h1 { font-size: 1.5rem; color: var(--accent); margin: 0 0 .25rem; }
+  h2 {
+    font-size: 1.05rem; margin: 1.4rem 0 .5rem; padding-bottom: .2rem;
+    border-bottom: 2px solid var(--accent); color: var(--accent);
+  }
+  .sub { color: var(--muted); font-size: .85rem; margin: 0 0 1rem; }
+  table { border-collapse: collapse; width: 100%; margin: .4rem 0 1rem; }
+  td, th { border: 1px solid var(--rule); padding: .35rem .5rem; text-align: left; vertical-align: top; }
+  th { background: #eef4fb; }
+  code { background: var(--codebg); padding: .1rem .3rem; border-radius: 3px; font-family: Consolas, monospace; font-size: .85em; }
+  pre {
+    background: var(--codebg); border: 1px solid var(--rule); border-left: 4px solid var(--accent);
+    padding: .75rem 1rem; overflow-x: auto; border-radius: 4px; font-family: Consolas, monospace; font-size: .82em;
+  }
+  ul { margin: .3rem 0 1rem; padding-left: 1.3rem; }
+  li { margin: .2rem 0; }
+  .meta { background:#f8f9fb; border:1px solid var(--rule); border-radius:6px; padding:.6rem .9rem; }
+  .meta p { margin: .2rem 0; }
+  .chk { list-style: none; padding-left: 0; }
+  .chk li::before { content: "\2610  "; font-family: Consolas, monospace; }
+  footer { margin-top: 2rem; padding-top: .6rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: .8rem; }
+  @media print {
+    body { margin: 0; max-width: none; font-size: 11.5px; }
+    h2 { page-break-after: avoid; }
+    pre, table { page-break-inside: avoid; }
+    a { color: var(--ink); text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Microsoft Support Case — Azure Local deployment input-parameter XML parse failure</h1>
+<p class="sub">Open from Azure Portal → <strong>Help + support → Create a support request</strong> → Issue type <strong>Technical</strong> → Service <strong>Azure Local / Azure Stack HCI</strong>.</p>
+
+<h2>Contact &amp; case details</h2>
+<div class="meta">
+  <p><strong>Name:</strong> Stephen Palermo</p>
+  <p><strong>Email:</strong> stephen.t.palermo@intel.com</p>
+  <p><strong>Phone:</strong> 602-300-8393</p>
+  <p><strong>Date prepared:</strong> 2026-10-10 (time: ______ local — set when submitting)</p>
+  <p><strong>Subscription ID:</strong> 260f1e88-d954-4946-9d66-876b6722ffc4</p>
+  <p><strong>Preferred contact method:</strong> email / phone</p>
+</div>
+
+<h2>Title</h2>
+<p>Azure Local single-node deployment fails at "Validating input parameters" — <code>Cannot convert "" to System.Xml.XmlDocument</code> (hex 0x00)</p>
+
+<h2>Severity</h2>
+<p>B or C — deployment fully blocked, no production impact (greenfield single-node).</p>
+
+<h2>Summary</h2>
+<p>Single-node Azure Local deployment fails every attempt during the environment-validation / input-parameter stage. The on-node deployment log (<code>C:\CloudDeployment\Logs\Script.*.log</code>) ends with:</p>
+<pre>Validating input parameters.
+Error: Cannot convert value "" to type "System.Xml.XmlDocument".
+Error: '.', hexadecimal value 0x00, is an invalid character. Line 1, position 1.</pre>
+<p>After this line the <code>DeploymentLauncherService</code> hangs at 0% (portal shows "In Progress" indefinitely). The Activity Log eventually reports: <code>Failing action plan as execution stuck at: InvokeEnvironmentChecker step for 10 hours.</code></p>
+<p>So the environment checker never actually runs — the deployment tool throws while casting an <strong>empty string to <code>[xml]</code></strong> during input validation, then hangs instead of failing cleanly.</p>
+
+<h2>Environment</h2>
+<table>
+  <tr><th>Item</th><th>Value</th></tr>
+  <tr><td>Hardware</td><td>Dell PowerEdge XR8620t, single node, hostname <code>GP82K74</code></td></tr>
+  <tr><td>NIC</td><td>Broadcom NetXtreme E-Series Dual-port 25Gb (Embedded NIC 1)</td></tr>
+  <tr><td>OS</td><td>Microsoft Azure Stack HCI, 24H2, build 26100.33438 (fully patched — <code>Get-WindowsUpdate</code> returns nothing)</td></tr>
+  <tr><td>Solution/package version</td><td>10.2609 (CloudDeployment 10.2609.0.6)</td></tr>
+  <tr><td>Subscription</td><td>260f1e88-d954-4946-9d66-876b6722ffc4</td></tr>
+  <tr><td>Tenant</td><td>aad3d65b-b317-4b0a-b150-8106381dff6c</td></tr>
+  <tr><td>Region / Resource group</td><td>eastus / ai-apps-1</td></tr>
+  <tr><td>Active Directory</td><td>Standalone Windows Server 2022 DC, domain <code>xeon-edge-ai-az.lab</code>, deploy account <code>azlocaldeploy</code>, OU <code>OU=AzureLocal,DC=xeon-edge-ai-az,DC=lab</code></td></tr>
+  <tr><td>Networking</td><td>Single "group all traffic" intent; reserved IPs 192.168.201.20–25; gateway 192.168.201.1; DNS 192.168.201.10</td></tr>
+  <tr><td>Storage</td><td>2 poolable NVMe (<code>CanPool=True</code>) + separate OS disk</td></tr>
+</table>
+
+<h2>What has been verified / ruled out</h2>
+<ul>
+  <li>All environment-validator prerequisites pass or were remediated: local admin SID/credential, external AD connectivity (ports 389/88/445/135 node→DC; DC firewall Private), physical disk minimum (2 <code>CanPool=True</code>), network RDMA check.</li>
+  <li>Reproduces after a <strong>full clean restart</strong>: deleted <code>deploymentSettings/default</code> + cluster + Key Vault + storage account, cleared all <code>CanNotDelete</code> locks, rebooted both node and DC.</li>
+  <li>Reproduces across <strong>two different network configurations</strong>: (1) storage VLAN 711 + manual <code>overrideAdapterProperty=true</code>; (2) storage VLAN 1 + <code>overrideAdapterProperty=false</code>. Identical <code>XmlDocument 0x00</code> error both times → not configuration-related.</li>
+  <li>OS fully patched; no Windows Updates available; UBR unchanged at 33438.</li>
+  <li>Arc agent healthy (Connected); required <code>AzureEdge*</code> extensions provisioned "Succeeded".</li>
+</ul>
+
+<h2>Request</h2>
+<p>Identify the deployment input parameter being cast to <code>[xml]</code> with an empty value during "Validating input parameters", and provide a fix / hotfix, or confirm the build in which this is resolved.</p>
+
+<h2>Root-cause detail (from on-node log analysis)</h2>
+<p>Analysis of <code>C:\CloudDeployment\Logs\Script.*.log</code> shows all parameters assign successfully, then at <code>Validating input parameters</code> the tool casts a value that is a <strong>run of spaces + an embedded <code>0x00</code></strong> to <code>[xml]</code>, which throws. The invocation line passes <code>-SqlActivationKey System.Security.SecureString</code> — an <strong>empty SecureString</strong> for this deployment. Marshaling an empty SecureString back to text yields the whitespace+null value, so the most likely culprit is <code>BootstrapCloudDeploymentTool.ps1</code> (package <strong>CloudDeployment 10.2609.0.6</strong>) parsing an empty <code>SqlActivationKey</code> as XML. <code>SqlActivationKey</code> is not exposed in the portal wizard, so the customer cannot work around it via configuration. <code>Unattended.json</code> is well-formed. Secondary suspects (empty single-node witness fields <code>WitnessType=</code>/<code>WitnessPath=</code>, empty security toggles <code>VBSProtection=</code>/<code>SEDProtectionEnforced=</code>) are empty strings rather than whitespace, so less likely.</p>
+
+<h2>Logs to attach</h2>
+<p>Collect these before submitting (checklist):</p>
+<ul class="chk">
+  <li><code>C:\CloudDeployment\Logs\Script.&lt;latest&gt;.log</code> — full parameter-assignment block followed by the failing <code>XmlDocument</code> line. (Example captured: <code>Script.2026-10-09.11-33-39.log</code>.)</li>
+  <li>Entire <code>C:\CloudDeployment\Logs\</code> folder (zipped) — full deployment/ECE engine logs for context.</li>
+  <li><code>C:\Deployment\Unattended.json</code> — generated answer file (confirms config is well-formed). <strong>Redact any secret/password values before sending.</strong></li>
+  <li>Portal deployment Activity Log JSON (<code>microsoft.azurestackhci/clusters/deploymentSettings/write</code>, status Failed) — contains the <code>statusMessage</code> with the stuck-checker exception.</li>
+  <li><code>azcmagent show</code> output from the node — proves Arc agent Connected + extensions healthy.</li>
+  <li><code>Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"</code> (CurrentBuild/UBR) — proves build 26100.33438, fully patched.</li>
+  <li>Optional: Support log package via the Configurator app — bundles all node logs for Microsoft.</li>
+</ul>
+
+<footer>
+  Full troubleshooting history: <code>Azure-Local.README.md</code>. Prepared 2026-10-10 by Stephen Palermo (stephen.t.palermo@intel.com).
+</footer>
+
+</body>
+</html>
