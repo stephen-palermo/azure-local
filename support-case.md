@@ -52,6 +52,9 @@ So the environment checker never actually runs — the deployment tool throws wh
 ## Request
 Identify the deployment input parameter being cast to `[xml]` with an empty value during "Validating input parameters", and provide a fix / hotfix, or confirm the build in which this is resolved.
 
+## Root-cause detail (from on-node log analysis)
+Analysis of `C:\CloudDeployment\Logs\Script.*.log` shows all parameters assign successfully, then at `Validating input parameters` the tool casts a value that is a **run of spaces + an embedded `0x00`** to `[xml]`, which throws. The invocation line passes `-SqlActivationKey System.Security.SecureString` — an **empty SecureString** for this deployment. Marshaling an empty SecureString back to text yields the whitespace+null value, so the most likely culprit is `BootstrapCloudDeploymentTool.ps1` (package **CloudDeployment 10.2609.0.6**) parsing an empty `SqlActivationKey` as XML. `SqlActivationKey` is not exposed in the portal wizard, so the customer cannot work around it via configuration. `Unattended.json` is well-formed. Secondary suspects (empty single-node witness fields `WitnessType=`/`WitnessPath=`, empty security toggles `VBSProtection=`/`SEDProtectionEnforced=`) are empty strings rather than whitespace, so less likely.
+
 ## Logs to attach
 - `C:\CloudDeployment\Logs\Script.<latest>.log` — shows the full parameter-assignment block followed by the failing `XmlDocument` line.
 - Portal deployment **Activity Log** JSON entry (`microsoft.azurestackhci/clusters/deploymentSettings/write`, status Failed) — contains the `statusMessage` with the stuck-checker exception.
