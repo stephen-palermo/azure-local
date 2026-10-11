@@ -32,10 +32,9 @@ After this line the `DeploymentLauncherService` hangs at 0% (portal shows "In Pr
 So the environment checker never actually runs — the deployment tool throws while casting an **empty string to `[xml]`** during input validation, then hangs instead of failing cleanly.
 
 ## Environment
-- Hardware: **Dell PowerEdge XR8620t**, single node, hostname `GP82K74`
-- NIC: Broadcom NetXtreme E-Series Dual-port 25Gb (Embedded NIC 1)
-- OS: **Microsoft Azure Stack HCI, 24H2, build 26100.33438** (fully patched — `Get-WindowsUpdate` returns nothing)
-- Solution/package version: **10.2609**
+- Hardware: **Dell PowerEdge XR8620t**, single node, hostname `GP82K74`. **NOTE: this model is NOT yet Microsoft-certified for Azure Local** (in pre-certification; being tested as a near-equivalent of certified XR-series systems). No published Dell **Solution Builder Extension (SBE) / OEM package** exists for it yet.
+- NIC: Broadcom NetXtreme E-Series Dual-port 25Gb (Embedded NIC 1). On the 2608 image the NIC driver is not in-box and must be injected (`pnputil`).
+- OS tested: **2609** (26100.33438, CloudDeployment 10.2609.0.6) — fails early; and **2608** (26100.33296, CloudDeployment 10.2608.0.11) — passes validation + domain-join, fails later at SBE.
 - Subscription: `260f1e88-d954-4946-9d66-876b6722ffc4`
 - Tenant: `aad3d65b-b317-4b0a-b150-8106381dff6c`
 - Region: `eastus`; Resource group: `ai-apps-1`
@@ -62,6 +61,22 @@ Identify the deployment input parameter being cast to `[xml]` with an empty valu
 
 ## Root-cause detail (from on-node log analysis)
 Analysis of `C:\CloudDeployment\Logs\Script.*.log` shows all parameters assign successfully, then at `Validating input parameters` the tool casts a value that is a **run of spaces + an embedded `0x00`** to `[xml]`, which throws. The invocation line passes `-SqlActivationKey System.Security.SecureString` — an **empty SecureString** for this deployment. Marshaling an empty SecureString back to text yields the whitespace+null value, so the most likely culprit is `BootstrapCloudDeploymentTool.ps1` (package **CloudDeployment 10.2609.0.6**) parsing an empty `SqlActivationKey` as XML. `SqlActivationKey` is not exposed in the portal wizard, so the customer cannot work around it via configuration. `Unattended.json` is well-formed. Secondary suspects (empty single-node witness fields `WitnessType=`/`WitnessPath=`, empty security toggles `VBSProtection=`/`SEDProtectionEnforced=`) are empty strings rather than whitespace, so less likely.
+
+## Version comparison (confirms a 2609 regression)
+The identical deployment on **Azure Local 2608** (`CloudDeployment 10.2608.0.11`, OS build 26100.33296) passes the "Validating input parameters" stage with **no `XmlDocument`/`0x00` error** and proceeds into the environment validator. Only **2609** (`CloudDeployment 10.2609.0.6`, OS 26100.33438) fails. This isolates the defect to the **2609 BootstrapCloudDeploymentTool** handling of the empty `SqlActivationKey` SecureString. Request: port the 2608 behavior / fix the empty-SecureString XML cast in 2609.
+
+## Second issue — default (no-SBE) deployment path fails at GetAccessControl on 2608
+On **2608**, deployment progresses much further: validation passes, the node **domain-joins** (`PartOfDomain=True`), then it **stops at the Solution Builder Extension (SBE) configuration** step. Per Microsoft's SBE documentation, hardware **without** an SBE is **supported** and uses a **default SBE version 2.1.0.0** (Validated Nodes / pre-2311.2 hardware operate this way) — so an OEM/SBE package is NOT a hard requirement. The log shows the default no-SBE path being taken and then failing:
+```
+Extension package not found at 'C:\SBE' or 'C:\CloudDeployment\OEMPackage' ... skipping.
+No SBE extracted. Updating ECE config to reflect Manufacturer 'Dell Inc.', Model 'PowerEdge XR8620t'...
+Create SBE Configuration with version: '2.1.0.1'.
+Need to re-create the SBE Configuration nuget 'C:\CloudDeployment\NuGetStore\Microsoft.AzureStack.SBEConfiguration.2.1.0.1.nupkg'.
+Prior SBE Configuration nuget installs exist. Removing 'C:\NuGetStore\Microsoft.AzureStack.SBEConfiguration.2.1.0.1' directory.
+Error: Exception calling "GetAccessControl" with "0" argument(s): "Attempted to perform an unauthorized operation."
+```
+The deployment creates the **default SBE Configuration 2.1.0.x** (the supported no-SBE path) and then fails on `GetAccessControl` while re-creating the SBE nuget. Context: the Dell XR8620t is in pre-certification (no published Dell SBE, and the XR-series has no SBE listed — only Dell AX-series), but per the docs an SBE is **not required**; the default path should succeed. A mismatched vendor/model SBE is rejected by the manifest check, so there is no package to "borrow."
+**Questions for Microsoft:** (1) The default (no-SBE) SBE-configuration path (default version 2.1.0.0) fails at `GetAccessControl` "unauthorized operation" on a cleanly imaged node — is this a known defect in a supported path? (2) What privilege/permission does the SBE-config step require, and why would `GetAccessControl` fail? (3) Any supported way to complete deployment on this hardware (pre-certification, no SBE)?
 
 ## Logs to attach
 Collect these before submitting (checklist):
